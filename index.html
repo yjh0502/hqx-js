@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Emscripten hqx Demo</title>
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap-combined.min.css" rel="stylesheet">
+    <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+
+    <div>
+    <h2>Emscripten Hqx Demo</h2>
+    <a href="http://www.hiend3d.com/hq2x.html">Hq2x Homepage</a><br/>
+    <a class="btn" href="#" onclick="upscale(2);">Hq2x</a>
+    <a class="btn" href="#" onclick="upscale(3);">Hq3x</a>
+    <a class="btn" href="#" onclick="upscale(4);">Hq4x</a>
+    </div>
+    
+    <!--
+    <div>
+    <br/>
+    <input id="img_url" type="text" placeholder="Enter image Url here"/>
+    <a class="btn" href="#" onclick="updateImage();">Update Image</a>
+    </div>
+    -->
+
+    <div>
+    <table class="table">
+    <thead>
+        <td>Original</td>
+        <td>Converted</td>
+    </thead>
+    <tr>
+        <td>
+	        <canvas id="c1" width="6" height="6"></canvas>
+        </td>
+        <td>
+	        <canvas id="c2" width="512" height="128"></canvas>
+        </td>
+    </table>
+    </div>
+
+	<script>
+	Module = {TOTAL_MEMORY:100000000};
+	</script>
+    <script type='text/javascript' src="src/hqx.js"></script>
+	<script>
+	var c1 = document.getElementById("c1");
+	var ctx1 = c1.getContext("2d");
+
+	var c2 = document.getElementById("c2");
+	var ctx2 = c2.getContext("2d");
+
+	var image = new Image();
+	image.onload = function() {
+		c1.width = image.width;
+		c1.height = image.height;
+		ctx1.drawImage(image, 0, 0);
+		upscale(4);
+	};
+	image.src = "http://desti.ruree.net/hqx/img/test_original.gif";
+
+    var updateImage = function() {
+        var text_url = document.getElementById('img_url');
+        image.src = text_url.value;
+    }
+
+	var upscale = function(ratio) {
+		var init = Module.cwrap("hqxInit");
+		init();
+
+		var origWidth = c1.width;
+		var origHeight = c1.height;
+
+		c2.width = origWidth * ratio;
+		c2.height = origHeight * ratio;
+
+		var setData = function(canvas, ctx, l, offset, count) {
+			var data = ctx.createImageData(canvas.width, canvas.height);
+			for(var i = 0; i < count; i++) {
+				var idx = i * 4;
+				data.data[idx+0] = l[idx+offset+0];
+				data.data[idx+1] = l[idx+offset+1];
+				data.data[idx+2] = l[idx+offset+2];
+				data.data[idx+3] = l[idx+offset+3];
+//				console.log("(" + l[idx+offset] + ", " + l[idx+offset+1] + ", " + l[idx+offset+2] + ", " + l[idx+offset+3] + ")");
+			}
+
+			ctx.putImageData(data, 0, 0);
+		}
+
+/*
+		var w = [255, 255, 255, 255];
+		var b = [0, 0, 0, 255];
+
+		var data_from = [].concat(
+					b, w, w, w, w, b,
+					w, b, w, w, b, w, 
+					w, w, b, b, w, w, 
+					w, w, b, b, w, w,
+					w, b, w, w, b, w,
+					b, w, w, w, w, b
+						 );
+		Module.HEAPU8.set(data_from, buf_from);
+		*/
+
+		var pixelCount = origWidth * origHeight;
+
+		var buf_from = Module._malloc(pixelCount * 4);
+		var buf_to = Module._malloc(pixelCount * 4 * (ratio * ratio));
+
+		var origData = ctx1.getImageData(0, 0, origWidth, origHeight);
+		Module.HEAPU8.set(origData.data, buf_from);
+//		setData(c1, ctx1, Module.HEAPU8, buf_from, pixelCount);
+
+		var hqx = Module.cwrap("hq" + ratio + "x_32", "number", ["number", "number", "number", "number"]);
+		hqx(buf_from, buf_to, origWidth, origHeight);
+
+		setData(c2, ctx2, Module.HEAPU8, buf_to, pixelCount * ratio * ratio);
+	}
+	</script>
+  </body>
+</html>
