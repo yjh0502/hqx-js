@@ -30,16 +30,25 @@
     <div>
     <table class="table">
     <thead>
-        <td>Original</td>
-        <td>Converted</td>
+        <tr>
+            <th>Original</th>
+            <th>Upscaled</th>
+        </tr>
     </thead>
+    <tbody>
     <tr>
         <td>
 	        <canvas id="c1" width="6" height="6"></canvas>
         </td>
         <td>
+            <h5>Upscaled with Hqx</h5>
 	        <canvas id="c2" width="512" height="128"></canvas>
+
+            <h5>Browser Upscaling</h5>
+            <img id="img_upscale" src="http://desti.ruree.net/hqx/img/test_original.gif"/>
         </td>
+    </tr>
+    </tbody>
     </table>
     </div>
 
@@ -69,8 +78,10 @@
     }
 
 	var upscale = function(ratio) {
-		var init = Module.cwrap("hqxInit");
-		init();
+        var hqx_init = Module.cwrap("hqxInit");
+        var hqx_filter = Module.cwrap("hq" + ratio + "x_32", "number", ["number", "number", "number", "number"]);
+
+		hqx_init();
 
 		var origWidth = c1.width;
 		var origHeight = c1.height;
@@ -86,26 +97,10 @@
 				data.data[idx+1] = l[idx+offset+1];
 				data.data[idx+2] = l[idx+offset+2];
 				data.data[idx+3] = l[idx+offset+3];
-//				console.log("(" + l[idx+offset] + ", " + l[idx+offset+1] + ", " + l[idx+offset+2] + ", " + l[idx+offset+3] + ")");
 			}
 
 			ctx.putImageData(data, 0, 0);
 		}
-
-/*
-		var w = [255, 255, 255, 255];
-		var b = [0, 0, 0, 255];
-
-		var data_from = [].concat(
-					b, w, w, w, w, b,
-					w, b, w, w, b, w, 
-					w, w, b, b, w, w, 
-					w, w, b, b, w, w,
-					w, b, w, w, b, w,
-					b, w, w, w, w, b
-						 );
-		Module.HEAPU8.set(data_from, buf_from);
-		*/
 
 		var pixelCount = origWidth * origHeight;
 
@@ -114,12 +109,14 @@
 
 		var origData = ctx1.getImageData(0, 0, origWidth, origHeight);
 		Module.HEAPU8.set(origData.data, buf_from);
-//		setData(c1, ctx1, Module.HEAPU8, buf_from, pixelCount);
 
-		var hqx = Module.cwrap("hq" + ratio + "x_32", "number", ["number", "number", "number", "number"]);
-		hqx(buf_from, buf_to, origWidth, origHeight);
+		hqx_filter(buf_from, buf_to, origWidth, origHeight);
 
 		setData(c2, ctx2, Module.HEAPU8, buf_to, pixelCount * ratio * ratio);
+
+        var img_upscale = document.getElementById("img_upscale");
+        img_upscale.style.width = origWidth * ratio + "px";
+        img_upscale.style.height = origHeight * ratio + "px";
 	}
 	</script>
   </body>
