@@ -3,7 +3,6 @@ hqx-js
 
 Hqx(hq2x, hq3x, hq4x) magnification filter with javascript, ported by Enscripten
 
-Live demo: 
 
 Original work: http://www.hiend3d.com/hq2x.html
 
