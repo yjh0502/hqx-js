@@ -17,6 +17,7 @@
     <a class="btn" href="#" onclick="upscale(2);">Hq2x</a>
     <a class="btn" href="#" onclick="upscale(3);">Hq3x</a>
     <a class="btn" href="#" onclick="upscale(4);">Hq4x</a>
+    <p id="text_time"></p>
     </div>
     
     <!--
@@ -78,6 +79,8 @@
     }
 
 	var upscale = function(ratio) {
+        var start = new Date().getTime();
+
         var hqx_init = Module.cwrap("hqxInit");
         var hqx_filter = Module.cwrap("hq" + ratio + "x_32", "number", ["number", "number", "number", "number"]);
 
@@ -117,6 +120,9 @@
         var img_upscale = document.getElementById("img_upscale");
         img_upscale.style.width = origWidth * ratio + "px";
         img_upscale.style.height = origHeight * ratio + "px";
+
+        var time_taken = new Date().getTime() - start;
+        document.getElementById("text_time").innerText = "Time taken: " + (time_taken / 1000.0) + " seconds";
 	}
 	</script>
   </body>
